@@ -1,6 +1,7 @@
 -- Spanish with Ignasi: initial Supabase schema
 -- Run in Supabase SQL Editor. Review policies before launching to paying students.
 create extension if not exists pgcrypto;
+create extension if not exists btree_gist;
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -51,6 +52,15 @@ create table if not exists public.availability (
   constraint availability_positive_duration check (end_time > start_time)
 );
 
+-- Prevent overlapping active bookings for the same teacher (including pending requests).
+do $ begin
+  if not exists (select 1 from pg_constraint where conname='no_overlapping_teacher_lessons') then
+    alter table public.lessons add constraint no_overlapping_teacher_lessons
+      exclude using gist (teacher_id with =, tstzrange(start_at,end_at,'[)') with &&)
+      where (status in ('requested','confirmed','reschedule_requested'));
+  end if;
+end $;
+
 create index if not exists lessons_student_start_idx on public.lessons(student_id,start_at);
 create index if not exists lessons_teacher_start_idx on public.lessons(teacher_id,start_at);
 create index if not exists messages_sender_created_idx on public.messages(sender_id,created_at);
@@ -60,6 +70,10 @@ create index if not exists change_requests_lesson_idx on public.lesson_change_re
 create or replace function public.is_teacher()
 returns boolean language sql stable security definer set search_path=public
 as $$ select exists(select 1 from public.profiles where id=auth.uid() and role='teacher'); $$;
+
+create or replace function public.is_teacher_id(profile_id uuid)
+returns boolean language sql stable security definer set search_path=public
+as $ select exists(select 1 from public.profiles where id=profile_id and role='teacher'); $;
 
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path=public
@@ -93,7 +107,7 @@ grant update(full_name) on public.profiles to authenticated;
 drop policy if exists "Students and teacher read relevant lessons" on public.lessons;
 create policy "Students and teacher read relevant lessons" on public.lessons for select to authenticated using(student_id=auth.uid() or teacher_id=auth.uid() or public.is_teacher());
 drop policy if exists "Students request own lessons" on public.lessons;
-create policy "Students request own lessons" on public.lessons for insert to authenticated with check(student_id=auth.uid() and status='requested' and teacher_id is not null and exists(select 1 from public.profiles t where t.id=teacher_id and t.role='teacher'));
+create policy "Students request own lessons" on public.lessons for insert to authenticated with check(student_id=auth.uid() and status='requested' and teacher_id is not null and public.is_teacher_id(teacher_id));
 drop policy if exists "Teacher manages lessons" on public.lessons;
 create policy "Teacher manages lessons" on public.lessons for update to authenticated using(public.is_teacher()) with check(public.is_teacher());
 drop policy if exists "Teacher cancels lessons" on public.lessons;

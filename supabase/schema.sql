@@ -61,6 +61,11 @@ do $ begin
   end if;
 end $;
 
+-- A student may book one active free trial; cancelled trials do not block a new request.
+create unique index if not exists one_active_trial_per_student
+  on public.lessons(student_id)
+  where lesson_type='trial' and status <> 'cancelled';
+
 create index if not exists lessons_student_start_idx on public.lessons(student_id,start_at);
 create index if not exists lessons_teacher_start_idx on public.lessons(teacher_id,start_at);
 create index if not exists messages_sender_created_idx on public.messages(sender_id,created_at);

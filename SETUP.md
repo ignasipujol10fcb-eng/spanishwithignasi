@@ -9,6 +9,9 @@
 ## Important status
 The public site and portal frontend are committed, but the portal will not accept real bookings or messages until Supabase is configured. A website alone cannot safely provide authentication, private messages, or durable bookings. No payment credentials are included. Payment processing is not integrated; the payment area explains that instructions will be provided after a booking is confirmed.
 
+## Publish the website
+1. In GitHub → repository Settings → Pages, choose **GitHub Actions** as the build and deployment source. The repository includes `.github/workflows/pages.yml`; each push to `main` will then deploy the static site. Check the Actions tab for deployment status and open the published URL shown by the workflow.
+
 ## Activate the portal
 1. Create a Supabase project at https://supabase.com/ (free tier may be sufficient to start).
 2. In Supabase → SQL Editor, run the complete `supabase/schema.sql` file.

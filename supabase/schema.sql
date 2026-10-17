@@ -83,9 +83,12 @@ alter table public.availability enable row level security;
 drop policy if exists "Profiles visible to self and teacher" on public.profiles;
 create policy "Profiles visible to self and teacher" on public.profiles for select to authenticated using (id=auth.uid() or public.is_teacher());
 drop policy if exists "Users update own profile name only" on public.profiles;
+-- Restrict browser clients to changing the display name; never allow self-promotion to teacher.
+drop policy if exists "Users update own profile name only" on public.profiles;
 create policy "Users update own profile name only" on public.profiles for update to authenticated using(id=auth.uid()) with check(id=auth.uid());
--- IMPORTANT: profile role is assigned by a trusted administrator in the SQL editor only.
--- The client must never provide role in profile updates.
+revoke update on public.profiles from authenticated;
+grant update(full_name) on public.profiles to authenticated;
+-- IMPORTANT: assign teacher role only from the trusted Supabase SQL editor.
 
 drop policy if exists "Students and teacher read relevant lessons" on public.lessons;
 create policy "Students and teacher read relevant lessons" on public.lessons for select to authenticated using(student_id=auth.uid() or teacher_id=auth.uid() or public.is_teacher());

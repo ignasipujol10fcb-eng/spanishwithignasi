@@ -76,5 +76,9 @@ drop policy if exists "Students request own certificates" on public.campus_certi
 create policy "Students request own certificates" on public.campus_certificates for insert to authenticated with check(student_id=auth.uid() and status='requested' and exists(select 1 from public.campus_enrolments e where e.course_id=campus_certificates.course_id and e.student_id=auth.uid() and e.status='active'));
 drop policy if exists "Teacher approves certificates" on public.campus_certificates;
 create policy "Teacher approves certificates" on public.campus_certificates for update to authenticated using(public.campus_is_teacher()) with check(public.campus_is_teacher());
+-- Restrict student writes to the fields needed for enrolment and progress only.
+revoke insert,update on public.campus_enrolments from authenticated;
+grant insert(course_id,student_id,status) on public.campus_enrolments to authenticated;
+grant update(status,completed_lesson_ids) on public.campus_enrolments to authenticated;
 -- IMPORTANT: browser checkout links do not confirm payment. Manually grant access only after verifying payment.
 -- For automatic paid enrolment, add a trusted payment provider webhook / server function before launch.

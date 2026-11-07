@@ -65,7 +65,7 @@ create policy "Teachers manage lessons" on public.campus_lessons for all to auth
 drop policy if exists "Users see own enrolments and teacher sees all" on public.campus_enrolments;
 create policy "Users see own enrolments and teacher sees all" on public.campus_enrolments for select to authenticated using(student_id=auth.uid() or public.campus_is_teacher());
 drop policy if exists "Students request enrolment" on public.campus_enrolments;
-create policy "Students request enrolment" on public.campus_enrolments for insert to authenticated with check(student_id=auth.uid() and status='pending' and exists(select 1 from public.campus_courses c where c.id=course_id and c.is_published));
+create policy "Students request enrolment" on public.campus_enrolments for insert to authenticated with check(student_id=auth.uid() and exists(select 1 from public.campus_courses c where c.id=course_id and c.is_published and ((c.price_eur=0 and status='active') or (c.price_eur>0 and status='pending'))));
 drop policy if exists "Students update own progress" on public.campus_enrolments;
 create policy "Students update own progress" on public.campus_enrolments for update to authenticated using(student_id=auth.uid() and status='active') with check(student_id=auth.uid() and status='active');
 drop policy if exists "Teacher manages enrolments" on public.campus_enrolments;

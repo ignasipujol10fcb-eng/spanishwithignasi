@@ -2,7 +2,9 @@
 
 ## What's in this repository
 - `index.html`: public teaching website with the €0 30-minute trial, €15 50-minute lesson, and Udemy self-paced course.
-- `portal.html`: student/teacher portal UI with sign-in, booking requests, calendar, teacher drag-to-reschedule, private messaging UI and learning links.
+- `campus.html` + `campus.js`: online campus with student registration/login, course catalogue, enrolment, lessons, progress, certificate requests and instructor studio.
+- `campus-schema.sql`: additional tables and row-level security policies for the online campus.
+- `portal.html`: separate private-lesson booking and messaging portal.
 - `config.js`: public Supabase project URL, anon key, and teacher user UUID placeholders.
 - `supabase/schema.sql`: database tables and initial Row Level Security policies.
 
@@ -11,6 +13,23 @@ The public site and portal frontend are committed, but the portal will not accep
 
 ## Publish the website
 1. In GitHub → repository Settings → Pages, choose **GitHub Actions** as the build and deployment source. The repository includes `.github/workflows/pages.yml`; each push to `main` will then deploy the static site. Check the Actions tab for deployment status and open the published URL shown by the workflow.
+
+## Activate the online campus
+1. Create a Supabase project (or use the existing project already connected to the student portal).
+2. Run `supabase/schema.sql` if it has not already been run, then run `campus-schema.sql` in Supabase SQL Editor.
+3. In Supabase Authentication, enable email/password sign-in and configure the published campus URL as an allowed redirect / site URL.
+4. Create your own account at `campus.html`. In Supabase SQL Editor, grant that account instructor access with: `update public.profiles set role='teacher' where id=(select id from auth.users where email='YOUR_EMAIL');`
+5. Put the Supabase project URL and publishable/anon key in `config.js`. Never put the service-role key in browser files.
+6. Open `campus.html`, sign in as the instructor and create your first course. Students register themselves, browse the catalogue and enrol.
+7. For each paid course, add a Stripe Payment Link / PayPal checkout URL. Paid enrolments remain pending until you verify payment and grant access in Student Management. Free courses can be joined immediately.
+
+## Campus features and payment notes
+- Course editor supports title, description, category, level, price, cover-image URL, outcomes, publication status and checkout link.
+- Lessons support YouTube/Vimeo/direct video URLs, written lesson content, lesson image URLs, durations and free previews. Host videos with a video provider; GitHub Pages is not a video-storage service.
+- Students have individual login accounts, course enrolments, progress tracking and certificate requests.
+- Certificates are approved by the instructor and can be printed by students.
+- Checkout links send payments to your own payment-provider account. Payment-provider processing fees may apply; the platform itself does not take a marketplace commission. Do not grant paid access until payment is verified.
+- This first version does not automatically verify payments, issue legally accredited qualifications, or provide protected streaming / downloadable media DRM.
 
 ## Activate the portal
 1. Create a Supabase project at https://supabase.com/ (free tier may be sufficient to start).
